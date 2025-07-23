@@ -1,264 +1,106 @@
-# 🎬 **RenderLab — Backend API**
+# API RenderLab – Backend Symfony 7
 
-**RenderLab** est une plateforme **SaaS** qui aide les créateurs de contenus à transformer facilement leurs scripts narratifs en **vidéos cinématographiques** prêtes pour les réseaux sociaux.
-Le backend est construit avec **Symfony + API Platform** et s’appuie sur l’IA pour :
-
-* Analyser le script fourni par l’utilisateur
-* Détecter les scènes clés
-* Générer des prompts visuels détaillés pour chaque scène
-* Créer automatiquement des images cinématographiques avec plusieurs angles de caméra
-* Fournir un workflow simplifié pour la post-production.
+**API RenderLab** est un backend SaaS moderne, sécurisé et extensible, construit avec Symfony 7 et orienté IA. Il permet à des utilisateurs de s’inscrire, de créer des scripts, puis de générer automatiquement des prompts, images (Gemini), et audio (Gemini) à partir de ces scripts. L’API est pensée pour un usage frontend (SPA, mobile, etc.) et pour une exploitation locale facile.
 
 ---
 
-## ✅ **Fonctionnalité principale**
+## Présentation
 
-1. **Soumission de script**
-   L’utilisateur écrit ou colle son script narratif dans l’application.
-
-2. **Analyse IA**
-   Pour chaque nouveau script arrive dans la base de donnee,Le backend envoie ce script à un modèle IA (LLM) pour détecter les scènes, les personnages et les ambiances.
-
-3. **Génération de prompts**
-   Pour chaque scène détectée, l’IA génère **2 à 4 prompts** visuels différents, chacun correspondant à un angle de caméra différent (ex. plan large, gros plan, contre-plongée).
-
-4. **Création des images**
-   Ces prompts sont ensuite envoyés à un modèle IA de génération d’images (ex. Midjourney, DALL·E, Stable Diffusion) pour produire les visuels.
-   Chaque image générée est stockée **côté serveur** pour une durée **limitée à 30 jours** maximum.
-
-5. **Stockage éphémère et lien sécurisé**
-   Les images sont hébergées via un stockage type **S3** ou **Cloudflare R2**, avec expiration automatique après 1 mois.
-   L’utilisateur peut télécharger ses images à tout moment.
-
-6. **Système de crédits**
-   Chaque appel IA consomme des crédits. Les transactions sont enregistrées pour un suivi précis et une facturation juste.
+- **Technos** : Symfony 7, Doctrine, LexikJWT, API Platform (désactivé, tout est custom controller), HttpClient, ffmpeg, Groq, Gemini.
+- **Sécurité** : Authentification JWT, contrôle d’accès strict, stockage sécurisé des médias.
+- **Fonctionnalités principales** :
+  - Inscription et login utilisateurs
+  - CRUD sur les scripts
+  - Génération de prompts IA (Groq)
+  - Génération d’images IA (Gemini, JPG haute qualité)
+  - Génération d’audio IA (Gemini, mp3 via ffmpeg)
+  - Stockage et organisation des médias par script
 
 ---
 
-## ✅ **Structure de la base de données**
+## Endpoints API (pour le frontend)
 
-| Entité                | Description                                                                               |
-| --------------------- | ----------------------------------------------------------------------------------------- |
-| **User**              | Gestion des comptes, rôles, crédits eta connexion JWT.                                     |
-| **Script**            | Contient le script original de l’utilisateur et le JSON complet de l’analyse IA.          |
-| **Prompt**            | Contient chaque prompt généré pour une scène + l’URL de l’image + date d’expiration.      |
-| **Job**               | Suit chaque tâche technique IA (ex. analyse de script ou génération d’image) et son état. |
-| **CreditTransaction** | Historique de consommation ou recharge de crédits par utilisateur.                        |
+### Authentification
+- `POST /api/register`  — Inscription utilisateur
+- `POST /api/login`     — Connexion utilisateur (retourne un JWT)
 
-**Relations clés :**
+### Scripts
+- `GET    /api/scripts`           — Lister les scripts de l’utilisateur
+- `POST   /api/scripts`           — Créer un script
+- `GET    /api/scripts/{id}`      — Voir un script
+- `PATCH  /api/scripts/{id}`      — Modifier un script
+- `DELETE /api/scripts/{id}`      — Supprimer un script
 
-* Un **User** possède plusieurs **Scripts**
-* Un **Script** possède plusieurs **Prompts**
-* Un **Script** est lié à plusieurs **Jobs**
-* Un **User** a un historique de **CreditTransactions**
+### Prompts
+- `POST /api/scripts/{id}/get_prompts` — Générer et stocker les prompts IA pour un script
 
----
+### Images
+- `POST /api/scripts/{id}/generate_images` — Générer et stocker les images IA (JPG) pour un script
 
-## ✅ **Bonnes pratiques**
-
-* 🔒 **Sécurité** : Authentification JWT, CORS configuré pour Next.js
-* 💾 **Stockage** : Images hébergées sur un bucket cloud avec expiration à 30 jours
-* ⚙️ **Purge automatique** : Cron Symfony pour supprimer les fichiers expirés
-* 📊 **Traçabilité** : Chaque action IA consomme des crédits enregistrés pour facturation.
+### Audio
+- `POST /api/scripts/{id}/generate_audio` — Générer et stocker l’audio IA (mp3) pour un script
 
 ---
 
-## ✅ **Tech Stack**
+## Tester l’application en local
 
-| Côté         | Stack                                                                     |
-| ------------ | ------------------------------------------------------------------------- |
-| **Backend**  | Symfony, API Platform, Doctrine ORM, JWT Auth                             |
-| **IA**       | OpenAI / LLM pour l’analyse script + IA images (Midjourney, DALL·E, SDXL) |
-| **Stockage** | S3 / Cloudflare R2 via Flysystem                                          |
-| **Frontend** | Next.js (hors scope de ce repo)                                           |
+### Prérequis
+- PHP >= 8.2
+- Composer
+- Symfony CLI (optionnel mais recommandé)
+- ffmpeg (pour la conversion audio)
+- Une base de données compatible Doctrine (ex : MySQL, PostgreSQL)
 
----
+### Installation
+1. **Cloner le repo**
+   ```bash
+   git clone <repo_url>
+   cd api-renderlab
+   ```
+2. **Installer les dépendances**
+   ```bash
+   composer install
+   ```
+3. **Configurer l’environnement**
+   - Copier `.env` en `.env.local` et adapter les variables (DB, JWT, GROQ_API_KEY, GEMINI_API_KEY)
+4. **Générer la clé JWT**
+   ```bash
+   php bin/console lexik:jwt:generate-keypair
+   ```
+5. **Créer la base et les tables**
+   ```bash
+   php bin/console doctrine:database:create
+   php bin/console doctrine:migrations:migrate
+   ```
+6. **Lancer le serveur**
+   ```bash
+   symfony server:start
+   # ou
+   php -S 127.0.0.1:8000 -t public
+   ```
 
-## ✅ **Exemple de JSON renvoyé par l’IA**
+### Tester les endpoints
+- Utiliser Postman, Insomnia ou `curl`.
+- Exemple d’inscription :
+  ```bash
+  curl -X POST http://127.0.0.1:8000/api/register -H "Content-Type: application/json" -d '{"email":"test@test.com","password":"motdepasse"}'
+  ```
+- Se connecter pour obtenir un JWT, puis l’utiliser dans les headers `Authorization: Bearer <token>` pour tous les endpoints protégés.
 
-```json
-{
-  "scriptId": "123e4567-e89b-12d3-a456-426614174000",
-  "scenes": [
-    {
-      "sceneNumber": 1,
-      "description": "A dusty attic with warm sunlight.",
-      "prompts": [
-        "Dusty attic, wide shot, warm sunlight through window.",
-        "Dusty attic, close-up on old chest, cinematic lighting."
-      ]
-    },
-    {
-      "sceneNumber": 2,
-      "description": "Hero enters the room cautiously.",
-      "prompts": [
-        "Young hero enters room, over-the-shoulder shot, suspenseful.",
-        "Close-up on hero's nervous face, dramatic shadows."
-      ]
-    }
-  ]
-}
-```
-
----
-
-## ✅ **Durée de rétention**
-
-* Les images générées restent disponibles pendant **30 jours** maximum.
-* Au-delà, elles sont automatiquement supprimées du stockage pour optimiser les coûts.
-* Les utilisateurs Premium peuvent bénéficier d’un stockage plus long.
-
----
-
-## ✅ **Pourquoi c’est structuré ainsi ?**
-
-✔️ Traçabilité complète des scripts, prompts et images
-✔️ Coût de stockage maîtrisé grâce à l’expiration automatique
-✔️ Flexibilité pour offrir des fonctionnalités premium (stockage illimité, versionning, historique)
-✔️ Sécurité et contrôle des accès grâce à JWT et URLs sécurisées
+### Génération IA
+- Les endpoints de génération (prompts, images, audio) nécessitent des clés Groq et Gemini valides dans `.env.local`.
+- Les médias sont stockés dans `public/images/{script_id}/` et `public/audio/{script_id}/`.
 
 ---
 
-# API Documentation
-
-## Authentication
-
-### Register
-- **POST** `/api/register`
-- **Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "yourPassword"
-}
-```
-- **Response:**
-  - 201 Created, `{ "message": "User registered successfully." }`
-
-### Login
-- **POST** `/api/login`
-- **Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "yourPassword"
-}
-```
-- **Response:**
-  - 200 OK, `{ "token": "...", "refresh_token": "..." }`
-
-### Refresh Token
-- **POST** `/api/token/refresh`
-- **Body:**
-```json
-{
-  "refresh_token": "..."
-}
-```
-- **Response:**
-  - 200 OK, `{ "token": "...", "refresh_token": "..." }`
+## Contribution
+- Forkez le repo, créez une branche, ouvrez une PR !
+- Toute contribution (correction, nouvelle feature, doc) est la bienvenue.
 
 ---
 
-## Script CRUD
+## Support
+Pour toute question, ouvrez une issue ou contactez l’équipe via le repo.
 
-> All routes below require `Authorization: Bearer <token>` header.
-
-### List Scripts
-- **GET** `/api/scripts`
-- **Response:**
-```json
-[
-  {
-    "id": 1,
-    "title": "...",
-    "rawText": "...",
-    "status": "...",
-    "author": 1,
-    "createdAt": "...",
-    "updatedAt": "..."
-  },
-  ...
-]
-```
-
-### Create Script
-- **POST** `/api/scripts`
-- **Body:**
-```json
-{
-  "title": "My Script",
-  "rawText": "Script content...",
-  "status": "draft"
-}
-```
-- **Response:**
-  - 201 Created, script object
-
-### Show Script
-- **GET** `/api/scripts/{id}`
-- **Response:**
-  - 200 OK, script object
-
-### Update Script
-- **PUT/PATCH** `/api/scripts/{id}`
-- **Body:** (any updatable field)
-```json
-{
-  "title": "Updated Title",
-  "rawText": "Updated content...",
-  "status": "published"
-}
-```
-- **Response:**
-  - 200 OK, updated script object
-- **Note:** Only the author can update.
-
-### Delete Script
-- **DELETE** `/api/scripts/{id}`
-- **Response:**
-  - 204 No Content
-- **Note:** Only the author can delete.
-
-### Analyze Script (AI)
-- **POST** `/api/scripts/{id}/analyze`
-- **Headers:** `Authorization: Bearer <token>`
-- **Response:**
-```json
-{
-  "scriptId": 1,
-  "scenes": [
-    {
-      "sceneNumber": 1,
-      "description": "A sample scene description.",
-      "prompts": [
-        "Prompt 1 for scene 1",
-        "Prompt 2 for scene 1"
-      ]
-    },
-    ...
-  ]
-}
-```
-- **Note:** Only the author can analyze their script. The result is stored in the script's `aiAnalysis` field.
-
----
-
-## Error Responses
-- 401 Unauthorized: Missing or invalid JWT
-- 403 Forbidden: Not the author (for update/delete)
-- 409 Conflict: Email already in use (register)
-- 400 Bad Request: Missing required fields
-
----
-
-## 🏆 **Tu peux copier ce README pour ton repo RenderLab — Backend**
-
-Si tu veux, je peux aussi te générer :
-
-* Un **exemple de fichier `schema.sql` complet**
-* Une version **MakerBundle : toutes les commandes**
-* Un **diagramme ERD**
-
-Dis-moi ! Je suis prêt ! 🚀
-
+## copilote prompt
+je t'explique : le script cree par l'utilisateur est stocke dans la base de donnee. puis tu vas creer des routes pour les controlleurs qui appartiennent  chacun au autres entite de sorte que  quand un script est deja cree, si l'utilisateur click sur get_prompt  un controlleur recoit cette requette, et via un service, il prend ce script selon son id et celui du user, le script est envoye vers le model IA Groq (la cle api est dans .env) groq va analyser les script, detecter  le moindre endroit ou un image est necessaire, il creer au moins trois prompts de generation d'images.  pourquoi trois prompts? parcequ'il faut plusieurs vues, face, dos, profile, et tants d'autres pour la meme scene. cette endroit. il va faire ce travail dans tout le script et renvoyer ces prompt puis symfony les recupere et les stockent dans la table prompt sous forme d'un array  a chaque scene, aumoin trois prompts d'images ou plus. et maintenant pour la generation de l'image, meme chose l'utilisateur apuie sur generate_images, le controleur approprie est active et via un service, contact l'AI de generation d'image GEMINI (la cle api est dans .env) et  les precedents prompts sont envoye pour onbtenir des image qui seront ensuit telecharge sur le serveur dans public/images dans un dossier ayant pour nom l'id du script, ou du user, ou de prompt  ca tu va decider de cela. et les noms des images generees sont stocke dans la table image  dans un array tout comme pour les prompt. pour l'audio c'est le meme process avec l'api de gemini  sauf qu'il n y aura qu'un seul audio en mp3 par script et selon la voix choisi par l'utilisateur.  tu doit optimiser ces systemes pour gagner en performance et ne pas surcharge l'api du model IA et optimiser le temp de reponsea

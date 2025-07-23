@@ -1,0 +1,55 @@
+security:
+    password_hashers:
+        App\Entity\User:
+            algorithm: auto
+
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+        login:
+            pattern:  ^/api/login
+            stateless: true
+            json_login:
+                check_path:               /api/login
+                username_path:            email
+                password_path:            password
+                success_handler:          lexik_jwt_authentication.handler.authentication_success
+                failure_handler:          lexik_jwt_authentication.handler.authentication_failure
+        api:
+            pattern:   ^/api
+            stateless: true
+            provider: app_user_provider
+            jwt: ~
+        main:
+            lazy: true
+            provider: app_user_provider
+            logout: true
+
+    access_control:
+        # Autoriser l'inscription sans authentification
+        - { path: ^/api/users, roles: PUBLIC_ACCESS, methods: [POST] }
+        # Autoriser le login JWT sans authentification
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        # Protéger toutes les autres routes API par JWT
+        - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
+
+
+when@test:
+    security:
+        password_hashers:
+            # By default, password hashers are resource intensive and take time. This is
+            # important to generate secure password hashes. In tests however, secure hashes
+            # are not important, waste resources and increase test times. The following
+            # reduces the work factor to the lowest possible values.
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

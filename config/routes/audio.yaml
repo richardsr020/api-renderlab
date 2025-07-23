@@ -1,0 +1,4 @@
+generate_audio:
+    path: /api/scripts/{id}/generate_audio
+    controller: App\Controller\AudioController::generateAudio
+    methods: [POST]

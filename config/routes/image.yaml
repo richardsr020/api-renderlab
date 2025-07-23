@@ -1,0 +1,4 @@
+generate_images:
+    path: /api/scripts/{id}/generate_images
+    controller: App\Controller\ImageController::generateImages
+    methods: [POST]

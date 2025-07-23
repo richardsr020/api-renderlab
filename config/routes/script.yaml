@@ -1,0 +1,24 @@
+script_index:
+    path: /api/scripts
+    controller: App\Controller\ScriptController::index
+    methods: [GET]
+
+script_create:
+    path: /api/scripts
+    controller: App\Controller\ScriptController::create
+    methods: [POST]
+
+script_show:
+    path: /api/scripts/{id}
+    controller: App\Controller\ScriptController::show
+    methods: [GET]
+
+script_update:
+    path: /api/scripts/{id}
+    controller: App\Controller\ScriptController::update
+    methods: [PATCH]
+
+script_delete:
+    path: /api/scripts/{id}
+    controller: App\Controller\ScriptController::delete
+    methods: [DELETE]

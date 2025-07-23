@@ -1,0 +1,4 @@
+get_prompts:
+    path: /api/scripts/{id}/get_prompts
+    controller: App\Controller\PromptController::getPrompts
+    methods: [POST]
