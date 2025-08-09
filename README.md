@@ -21,24 +21,45 @@
 ## Endpoints API (pour le frontend)
 
 ### Authentification
-- `POST /api/register`  — Inscription utilisateur
-- `POST /api/login`     — Connexion utilisateur (retourne un JWT)
 
 ### Scripts
-- `GET    /api/scripts`           — Lister les scripts de l’utilisateur
-- `POST   /api/scripts`           — Créer un script
-- `GET    /api/scripts/{id}`      — Voir un script
-- `PATCH  /api/scripts/{id}`      — Modifier un script
-- `DELETE /api/scripts/{id}`      — Supprimer un script
 
 ### Prompts
-- `POST /api/scripts/{id}/get_prompts` — Générer et stocker les prompts IA pour un script
 
 ### Images
-- `POST /api/scripts/{id}/generate_images` — Générer et stocker les images IA (JPG) pour un script
 
 ### Audio
-- `POST /api/scripts/{id}/generate_audio` — Générer et stocker l’audio IA (mp3) pour un script
+### Détail des endpoints et bodies
+
+#### Authentification
+- `POST /api/register`
+  Body : `{ "email": "string", "password": "string" }`
+- `POST /api/login`
+  Body : `{ "email": "string", "password": "string" }`
+
+#### Scripts
+- `GET /api/scripts`  
+  Body : aucun
+- `POST /api/scripts`
+  Body : `{ "title": "string", "content": "string" }`
+- `GET /api/scripts/{id}`
+  Body : aucun
+- `PATCH /api/scripts/{id}`
+  Body : `{ "title": "string", "content": "string" }` (partiel possible)
+- `DELETE /api/scripts/{id}`
+  Body : aucun
+
+#### Prompts
+- `POST /api/scripts/{id}/get_prompts`
+  Body : aucun ou `{ "options": ... }`
+
+#### Images
+- `POST /api/scripts/{id}/generate_images`
+  Body : aucun ou `{ "options": ... }`
+
+#### Audio
+- `POST /api/scripts/{id}/generate_audio`
+  Body : `{ "voice": "string" }`
 
 ---
 

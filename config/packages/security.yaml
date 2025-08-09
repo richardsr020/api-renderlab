@@ -22,6 +22,7 @@ security:
                 password_path:            password
                 success_handler:          lexik_jwt_authentication.handler.authentication_success
                 failure_handler:          lexik_jwt_authentication.handler.authentication_failure
+        
         api:
             pattern:   ^/api
             stateless: true
@@ -34,7 +35,7 @@ security:
 
     access_control:
         # Autoriser l'inscription sans authentification
-        - { path: ^/api/users, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/register, roles: PUBLIC_ACCESS, methods: [POST] }
         # Autoriser le login JWT sans authentification
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         # Protéger toutes les autres routes API par JWT
