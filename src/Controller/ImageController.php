@@ -15,6 +15,31 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 class ImageController extends AbstractController
 {
+    #[Route('/api/images/{id}', name: 'get_image', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function getImage($id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse {
+        $user = $tokenStorage->getToken()->getUser();
+        $image = $em->getRepository(Image::class)->find($id);
+        if (!$image || $image->getScript()->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Image not found or forbidden'], 404);
+        }
+        return $this->json($image);
+    }
+
+
+    #[Route('/api/images/{id}', name: 'delete_image', methods: ['DELETE'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function deleteImage($id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse {
+        $user = $tokenStorage->getToken()->getUser();
+        $image = $em->getRepository(Image::class)->find($id);
+        if (!$image || $image->getScript()->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Image not found or forbidden'], 404);
+        }
+        $em->remove($image);
+        $em->flush();
+        return $this->json(['success' => true]);
+    }
+
     #[Route('/api/scripts/{id}/generate_images', name: 'generate_images', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function generateImages(

@@ -39,4 +39,44 @@ class PromptController extends AbstractController
         $em->flush();
         return $this->json(['success' => true, 'prompts' => $scenePrompts]);
     }
+
+    #[Route('/api/prompts/{id}', name: 'get_prompt', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function getPrompt($id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse {
+        $user = $tokenStorage->getToken()->getUser();
+        $prompt = $em->getRepository(Prompt::class)->find($id);
+        if (!$prompt || $prompt->getScript()->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Prompt not found or forbidden'], 404);
+        }
+        return $this->json($prompt);
+    }
+
+    #[Route('/api/prompts/{id}', name: 'update_prompt', methods: ['PATCH'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function updatePrompt($id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse {
+        $user = $tokenStorage->getToken()->getUser();
+        $prompt = $em->getRepository(Prompt::class)->find($id);
+        if (!$prompt || $prompt->getScript()->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Prompt not found or forbidden'], 404);
+        }
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (isset($data['content'])) {
+            $prompt->setContent($data['content']);
+        }
+        $em->flush();
+        return $this->json(['success' => true, 'prompt' => $prompt]);
+    }
+
+    #[Route('/api/prompts/{id}', name: 'delete_prompt', methods: ['DELETE'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function deletePrompt($id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse {
+        $user = $tokenStorage->getToken()->getUser();
+        $prompt = $em->getRepository(Prompt::class)->find($id);
+        if (!$prompt || $prompt->getScript()->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Prompt not found or forbidden'], 404);
+        }
+        $em->remove($prompt);
+        $em->flush();
+        return $this->json(['success' => true]);
+    }
 }

@@ -31,11 +31,15 @@ class AuthController extends AbstractController
         if (count($errors) > 0) {
             return $this->json(['error' => (string) $errors], 422);
         }
+        // Génération d'un refresh token simple (à améliorer en prod)
+        $refreshToken = bin2hex(random_bytes(64));
+        $user->setRefreshToken($refreshToken);
         $em->persist($user);
         $em->flush();
         return $this->json([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
+            'refresh_token' => $refreshToken
         ], 201);
     }
 }

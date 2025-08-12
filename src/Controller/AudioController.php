@@ -15,6 +15,30 @@ use Symfony\Component\HttpFoundation\Request;
 
 class AudioController extends AbstractController
 {
+    #[Route('/api/audio/{id}', name: 'get_audio', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function getAudio($id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse {
+        $user = $tokenStorage->getToken()->getUser();
+        $audio = $em->getRepository(Audio::class)->find($id);
+        if (!$audio || $audio->getScript()->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Audio not found or forbidden'], 404);
+        }
+        return $this->json($audio);
+    }
+
+    #[Route('/api/audio/{id}', name: 'delete_audio', methods: ['DELETE'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function deleteAudio($id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse {
+        $user = $tokenStorage->getToken()->getUser();
+        $audio = $em->getRepository(Audio::class)->find($id);
+        if (!$audio || $audio->getScript()->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Audio not found or forbidden'], 404);
+        }
+        $em->remove($audio);
+        $em->flush();
+        return $this->json(['success' => true]);
+    }
+
     #[Route('/api/scripts/{id}/generate_audio', name: 'generate_audio', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function generateAudio(

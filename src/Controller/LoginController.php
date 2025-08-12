@@ -32,6 +32,14 @@ class LoginController
             return new JsonResponse(['error' => 'Invalid credentials'], 401);
         }
         $token = $jwtManager->create($user);
-        return new JsonResponse(['token' => $token]);
+        // Génération d'un refresh token simple (à améliorer en prod)
+        $refreshToken = bin2hex(random_bytes(64));
+        $user->setRefreshToken($refreshToken);
+        $em->persist($user);
+        $em->flush();
+        return new JsonResponse([
+            'token' => $token,
+            'refresh_token' => $refreshToken
+        ]);
     }
 }

@@ -38,6 +38,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private \DateTimeImmutable $createdAt;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Script::class)]
+    // ...existing code...
+    public function getRefreshToken(): ?string
+    {
+        return $this->refreshToken;
+    }
+
+    public function setRefreshToken(?string $refreshToken): self
+    {
+        $this->refreshToken = $refreshToken;
+        return $this;
+    }
+    #[ORM\Column(type: 'string', nullable: true)]
+    private ?string $refreshToken = null;
     private $scripts;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Payment::class)]

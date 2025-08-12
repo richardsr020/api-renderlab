@@ -1,6 +1,6 @@
 script_index:
     path: /api/scripts
-    controller: App\Controller\ScriptController::index
+    controller: App\Controller\ScriptController::getScripts
     methods: [GET]
 
 script_create:

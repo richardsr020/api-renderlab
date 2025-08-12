@@ -1,0 +1,4 @@
+api_refresh_token:
+    path: /api/refresh_token
+    controller: App\Controller\RefreshTokenController::refreshToken
+    methods: [POST]

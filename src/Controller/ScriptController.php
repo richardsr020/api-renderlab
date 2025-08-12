@@ -14,10 +14,16 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 class ScriptController extends AbstractController
 {
-    #[Route('/api/scripts', name: 'script_index', methods: ['GET'])]
-    public function index(EntityManagerInterface $em): JsonResponse
+    // GET: List all scripts for the authenticated user
+    #[Route('/api/scripts', name: 'script_list', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function getScripts(EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse
     {
-        $scripts = $em->getRepository(Script::class)->findAll();
+        $user = $tokenStorage->getToken()->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+        $scripts = $em->getRepository(Script::class)->findBy(['user' => $user->getId()]);
         $data = array_map(fn($script) => [
             'id' => $script->getId(),
             'title' => $script->getTitle(),
@@ -28,6 +34,26 @@ class ScriptController extends AbstractController
         return $this->json($data);
     }
 
+    // GET: Get a single script for the authenticated user
+    #[Route('/api/scripts/{script_id}', name: 'script_show', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function getScript($script_id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse
+    {
+        $user = $tokenStorage->getToken()->getUser();
+        $script = $em->getRepository(Script::class)->find($script_id);
+        if (!$script || !$user instanceof User || $script->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Script not found or access denied'], 404);
+        }
+        return $this->json([
+            'id' => $script->getId(),
+            'title' => $script->getTitle(),
+            'content' => $script->getContent(),
+            'createdAt' => $script->getCreatedAt()->format('c'),
+            'user' => $script->getUser() ? $script->getUser()->getId() : null,
+        ]);
+    }
+
+    // POST: Create a new script for the authenticated user
     #[Route('/api/scripts', name: 'script_create', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function create(Request $request, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse
@@ -55,33 +81,15 @@ class ScriptController extends AbstractController
         ], 201);
     }
 
-    #[Route('/api/scripts/{id}', name: 'script_show', methods: ['GET'])]
-    public function show($id, EntityManagerInterface $em): JsonResponse
-    {
-        $script = $em->getRepository(Script::class)->find($id);
-        if (!$script) {
-            return $this->json(['error' => 'Script not found'], 404);
-        }
-        return $this->json([
-            'id' => $script->getId(),
-            'title' => $script->getTitle(),
-            'content' => $script->getContent(),
-            'createdAt' => $script->getCreatedAt()->format('c'),
-            'user' => $script->getUser() ? $script->getUser()->getId() : null,
-        ]);
-    }
-
-    #[Route('/api/scripts/{id}', name: 'script_update', methods: ['PATCH'])]
+    // PATCH: Update a script for the authenticated user
+    #[Route('/api/scripts/{script_id}', name: 'script_update', methods: ['PATCH'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function update($id, Request $request, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse
+    public function update($script_id, Request $request, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse
     {
-        $script = $em->getRepository(Script::class)->find($id);
-        if (!$script) {
-            return $this->json(['error' => 'Script not found'], 404);
-        }
         $user = $tokenStorage->getToken()->getUser();
-        if (!$user instanceof User || $script->getUser()->getId() !== $user->getId()) {
-            return $this->json(['error' => 'Forbidden'], 403);
+        $script = $em->getRepository(Script::class)->find($script_id);
+        if (!$script || !$user instanceof User || $script->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Forbidden or not found'], 403);
         }
         $data = json_decode($request->getContent(), true);
         if (isset($data['title'])) {
@@ -100,17 +108,15 @@ class ScriptController extends AbstractController
         ]);
     }
 
-    #[Route('/api/scripts/{id}', name: 'script_delete', methods: ['DELETE'])]
+    // DELETE: Delete a script for the authenticated user
+    #[Route('/api/scripts/{script_id}', name: 'script_delete', methods: ['DELETE'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function delete($id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse
+    public function delete($script_id, EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse
     {
-        $script = $em->getRepository(Script::class)->find($id);
-        if (!$script) {
-            return $this->json(['error' => 'Script not found'], 404);
-        }
         $user = $tokenStorage->getToken()->getUser();
-        if (!$user instanceof User || $script->getUser()->getId() !== $user->getId()) {
-            return $this->json(['error' => 'Forbidden'], 403);
+        $script = $em->getRepository(Script::class)->find($script_id);
+        if (!$script || !$user instanceof User || $script->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Forbidden or not found'], 403);
         }
         $em->remove($script);
         $em->flush();

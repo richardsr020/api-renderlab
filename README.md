@@ -24,6 +24,29 @@
 
 ### Scripts
 
+## API Endpoints
+
+### Scripts
+
+- `GET /api/scripts`  
+  Récupère tous les scripts de l’utilisateur connecté (identifié via le JWT).
+
+- `GET /api/scripts/{script_id}`  
+  Récupère le détail d’un script précis appartenant à l’utilisateur connecté.
+
+- `POST /api/scripts`  
+  Crée un nouveau script pour l’utilisateur connecté.
+
+- `PATCH /api/scripts/{script_id}`  
+  Modifie un script existant appartenant à l’utilisateur connecté.
+
+- `DELETE /api/scripts/{script_id}`  
+  Supprime un script appartenant à l’utilisateur connecté.
+
+> Toutes les routes nécessitent un header `Authorization: Bearer <token>`.
+
+> Toutes les routes nécessitent un header `Authorization: Bearer <token>`.
+
 ### Prompts
 
 ### Images
@@ -36,6 +59,11 @@
   Body : `{ "email": "string", "password": "string" }`
 - `POST /api/login`
   Body : `{ "email": "string", "password": "string" }`
+
+#### Rafraîchissement du token
+- `POST /api/refresh_token`
+  Body : `{ "refresh_token": "string" }`
+  Retour : `{ "token": "string" }`
 
 #### Scripts
 - `GET /api/scripts`  
@@ -50,16 +78,32 @@
   Body : aucun
 
 #### Prompts
-- `POST /api/scripts/{id}/get_prompts`
   Body : aucun ou `{ "options": ... }`
+### Prompts
+- `GET /api/prompts/{id}`  
+  Récupère un prompt précis.
+- `PATCH /api/prompts/{id}`  
+  Modifie le contenu d'un prompt.
+- `DELETE /api/prompts/{id}`  
+  Supprime un prompt.
 
 #### Images
-- `POST /api/scripts/{id}/generate_images`
   Body : aucun ou `{ "options": ... }`
+### Images
+- `GET /api/images/{id}`  
+  Récupère une image générée.
+- `PATCH /api/images/{id}`  
+  Modifie les prompts associés à une image.
+- `DELETE /api/images/{id}`  
+  Supprime une image générée.
 
 #### Audio
-- `POST /api/scripts/{id}/generate_audio`
   Body : `{ "voice": "string" }`
+### Audio
+- `GET /api/audio/{id}`  
+  Récupère un audio généré.
+- `DELETE /api/audio/{id}`  
+  Supprime un audio généré.
 
 ---
 
