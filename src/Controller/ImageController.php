@@ -5,10 +5,13 @@ namespace App\Controller;
 use App\Entity\Script;
 use App\Entity\Prompt;
 use App\Entity\Image;
+use App\Entity\Task;
+use App\Message\GenerateImagesMessage;
 use App\Service\GeminiService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -46,38 +49,45 @@ class ImageController extends AbstractController
         $id,
         EntityManagerInterface $em,
         TokenStorageInterface $tokenStorage,
-        GeminiService $geminiService
+        MessageBusInterface $messageBus
     ): JsonResponse {
         $user = $tokenStorage->getToken()->getUser();
         $script = $em->getRepository(Script::class)->find($id);
         if (!$script || $script->getUser()->getId() !== $user->getId()) {
             return $this->json(['error' => 'Script not found or forbidden'], 404);
         }
-        // Récupérer tous les prompts liés à ce script
+
+        // Vérifier si des prompts existent
         $prompts = $em->getRepository(Prompt::class)->findBy(['script' => $script]);
         if (!$prompts) {
-            return $this->json(['error' => 'No prompts found for this script'], 400);
+            return $this->json(['error' => 'No prompts found for this script. Generate prompts first.'], 400);
         }
-        $imagesResult = [];
-        foreach ($prompts as $promptEntity) {
-            $promptList = json_decode($promptEntity->getContent(), true);
-            $sceneImages = [];
-            foreach ($promptList as $idx => $promptText) {
-                $saveDir = __DIR__ . '/../../public/images/' . $script->getId();
-                $filename = 'scene_' . $promptEntity->getId() . '_img_' . ($idx+1) . '.png';
-                $path = $geminiService->generateImage($promptText, $saveDir, $filename);
-                if ($path) {
-                    $sceneImages[] = '/images/' . $script->getId() . '/' . $filename;
+
+        // Vérifier si une tâche est déjà en cours
+        $existingTask = $em->getRepository(Task::class)->findOneBy([
+            'scriptId' => $script->getId(),
+            'type' => 'images',
+            'status' => ['pending', 'in_progress']
+        ]);
+
+        if ($existingTask) {
+            return $this->json([
+                'success' => true,
+                'task_id' => $existingTask->getTaskId(),
+                'status' => $existingTask->getStatus(),
+                'message' => 'Image generation already in progress'
+            ]);
                 }
-            }
-            // Stocker dans la table Image (array)
-            $imageEntity = new Image();
-            $imageEntity->setUrl(json_encode($sceneImages));
-            $imageEntity->setScript($script);
-            $em->persist($imageEntity);
-            $imagesResult[$promptEntity->getId()] = $sceneImages;
-        }
-        $em->flush();
-        return $this->json(['success' => true, 'images' => $imagesResult]);
+
+        // Créer et envoyer le message
+        $message = new GenerateImagesMessage($script->getId(), $user->getId());
+        $messageBus->dispatch($message);
+
+        return $this->json([
+            'success' => true,
+            'task_id' => $message->taskId,
+            'status' => 'pending',
+            'message' => 'Image generation started'
+        ]);
     }
 }

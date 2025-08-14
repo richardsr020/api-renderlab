@@ -15,6 +15,31 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # Configuration Redis
+    Predis\ClientInterface:
+        factory: ['Predis\Client', 'create']
+        arguments:
+            - '%env(REDIS_URL)%'
+
+    # Services avec configuration spécifique
+    App\Service\RateLimiterService:
+        arguments:
+            $redis: '@Predis\ClientInterface'
+
+    App\Service\CacheService:
+        arguments:
+            $redis: '@Predis\ClientInterface'
+
+    App\Service\RetryService:
+        arguments:
+            $maxRetries: 3
+            $baseDelay: 1000
+            $multiplier: 2.0
